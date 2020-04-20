@@ -6,6 +6,13 @@ def print_member_functions(object):
             print(name)
 
 
+def get_body_homogeneous_matrix(rigid_body):
+    frame = rigid_body.body_frame()
+    fixed_position_rigid_transform = frame.GetFixedPoseInBodyFrame()
+    homogeneous_matrix = fixed_position_rigid_transform.GetAsMatrix4()
+    return homogeneous_matrix
+
+
 def print_body(rigid_body, public_functions=True):
     """
     :param rigid_body: pydrake.multibody.tree.RigidBody

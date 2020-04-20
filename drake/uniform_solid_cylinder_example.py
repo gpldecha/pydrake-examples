@@ -15,7 +15,7 @@ from pydrake.geometry.render import (
     RenderEngineVtkParams,
 )
 import time
-from utils import print_body
+from utils import print_body, get_body_homogeneous_matrix
 
 
 class CylinderSystem(LeafSystem):
@@ -63,9 +63,11 @@ print_body(cylinder_body)
 
 gravity = np.array([0., 0., -9.81])
 cylinder_mass = cylinder_body.default_mass()
-
-
-
+h = get_body_homogeneous_matrix(cylinder_body)
+position = h[:-1, 3]
+target_one = position + np.array([0., 0., 1.])
+target_two = position - np.array([0., 0., 1.])
+current_target = target_one
 
 plant.Finalize()
 
@@ -92,11 +94,32 @@ time.sleep(1.0)
 time_ = 0
 print('Start')
 start_force = 10
-cylinder_system.wrench[2] = -gravity[-1] * cylinder_mass
-
+model_force = -gravity[-1] * cylinder_mass
+Kp = 0.1
+Kd = 0.3
+going_to_target = 1
 while True:
+    curr_context = diagram.GetMutableSubsystemContext(plant, simulator.get_mutable_context())
+    positions = plant.GetPositions(curr_context)
+    velocity = plant.GetVelocities(curr_context)
 
-    cylinder_system.wrench[2] -= sim_time_step
+    z_position = positions[-1]
+    z_velocity = velocity[-1]
+
+    distance = np.fabs(z_position - current_target[-1])
+    if distance < 0.05:
+        if going_to_target == 1:
+            current_target = target_two
+            going_to_target = 2
+        else:
+            current_target = target_one
+            going_to_target = 1
+
+    e_position = (current_target[-1] - z_position)
+    force_z = Kp*e_position - Kd*z_velocity
+    print('p_e: {} vel: {}'.format(e_position, z_velocity))
+
+    cylinder_system.wrench[2] = model_force + force_z
 
     time_ += sim_time_step
     simulator.AdvanceTo(time_)
