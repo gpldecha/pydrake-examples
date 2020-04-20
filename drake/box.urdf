@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
-<robot name="square_peg" >
-    <link name="peg_link">
+<robot name="box" >
+    <link name="box_link">
         <inertial>
             <origin xyz="0 0 0" rpy="0 0 0"/>
             <mass value="1"/>

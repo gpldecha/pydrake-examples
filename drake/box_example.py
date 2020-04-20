@@ -29,13 +29,12 @@ from pydrake.systems.framework import (
     AbstractValue,
 )
 
-import matplotlib.pyplot as plt
 
 
 sim_time_step = 0.001
 builder = DiagramBuilder()
 plant, scene_graph = AddMultibodyPlantSceneGraph(builder, sim_time_step)
-object_instance = Parser(plant).AddModelFromFile('peg.urdf')
+object_instance = Parser(plant).AddModelFromFile('box.urdf')
 scene_graph.AddRenderer("renderer", MakeRenderEngineVtk(RenderEngineVtkParams()))
 ConnectDrakeVisualizer(builder, scene_graph)
 
@@ -54,9 +53,9 @@ forces.append(force_object)
 
 
 value = AbstractValue.Make(forces)
-force = builder.AddSystem(ConstantValueSource(value))
+force_system = builder.AddSystem(ConstantValueSource(value))
 
-builder.Connect(force.get_output_port(0), plant.get_applied_spatial_force_input_port())
+builder.Connect(force_system.get_output_port(0), plant.get_applied_spatial_force_input_port())
 
 
 diagram = builder.Build()
@@ -66,30 +65,24 @@ simulator = Simulator(diagram)
 context = simulator.get_mutable_context()
 
 print('num_positions: {}'.format(plant.num_positions(object_instance)))
-plant.SetPositions(context, object_instance, [0, 0, 0, 1, 0, 0, 3])
+plant.SetPositions(context, object_instance, [0, 0, 0, 1, 0, 0, 0])
 
 
 plant_context = diagram.GetMutableSubsystemContext(plant, context)
-
-#object_index = plant.GetBodyIndices(object_instance)
-#print(dir(context))
-#exit(0)
-# object_context = diagram.GetMutableSubsystemContext(object_index, context)
+print(dir(plant_context))
 
 time.sleep(1.0)
 time_ = 0
 print('Start')
 start_force = 10
 while True:
+    curr_context = diagram.GetMutableSubsystemContext(plant, simulator.get_mutable_context())
+    print(dir(curr_context))
 
-    force_object.F_Bq_W = SpatialForce(tau=np.zeros(3), f=np.array([0., 0., start_force]))
+    #force_object.F_Bq_W = SpatialForce(tau=np.zeros(3), f=np.array([0., 0., start_force]))
 
     start_force -= sim_time_step
 
     time_ += sim_time_step
     simulator.AdvanceTo(time_)
     time.sleep(sim_time_step)
-# print('Plot image')
-# plt.figure()
-# plot_system_graphviz(diagram, max_depth=3)
-# plt.show()
